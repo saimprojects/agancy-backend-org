@@ -193,6 +193,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
 
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='').split(',')
+
 
 # Email settings (placeholder - will need actual credentials)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
