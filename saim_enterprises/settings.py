@@ -252,3 +252,17 @@ JAZZMIN_SETTINGS = {
     "custom_js": None,
     "site_logo": None,  # Yahan apna logo lagao (static folder me rakho)
 }
+
+
+CKEDITOR_5_UPLOAD_PATH = "uploads/"
+
+CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': [
+            'heading', '|', 'bold', 'italic', 'underline', 'link', 
+            'bulletedList', 'numberedList', '|',
+            'blockQuote', 'insertTable', 'mediaEmbed', '|',
+            'undo', 'redo'
+        ],
+    },
+}

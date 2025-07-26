@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django_ckeditor_5.fields import CKEditor5Field
 
 User = get_user_model()
 
@@ -17,7 +18,7 @@ class Service(TimeStampedModel):
     """Service model for agency services"""
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    description = models.TextField()
+    description = CKEditor5Field('Text', config_name='default')
     short_description = models.CharField(max_length=300)
     icon = models.ImageField(upload_to='services/icons/', blank=True, null=True)
     image = models.ImageField(upload_to='services/images/', blank=True, null=True)
@@ -61,7 +62,7 @@ class Project(TimeStampedModel):
     """Project/Case Study model"""
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    description = models.TextField()
+    description = CKEditor5Field('Text', config_name='default')
     short_description = models.CharField(max_length=300)
     industry = models.ForeignKey(Industry, on_delete=models.SET_NULL, null=True, blank=True)
     client = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='projects')
@@ -90,7 +91,7 @@ class Project(TimeStampedModel):
     
     # SEO fields
     meta_title = models.CharField(max_length=60, blank=True)
-    meta_description = models.CharField(max_length=160, blank=True)
+    description = CKEditor5Field('Text', config_name='default')
     
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -137,7 +138,7 @@ class ProjectTagRelation(models.Model):
 class Testimonial(TimeStampedModel):
     """Client testimonials"""
     name = models.CharField(max_length=100)
-    designation = models.CharField(max_length=100)
+    description = CKEditor5Field('Text', config_name='default')
     company = models.CharField(max_length=100, blank=True)
     testimonial_text = models.TextField()
     rating = models.PositiveIntegerField(
@@ -160,7 +161,7 @@ class BlogCategory(TimeStampedModel):
     """Blog post categories"""
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(unique=True, blank=True)
-    description = models.TextField(blank=True)
+    description = CKEditor5Field('Text', config_name='default')
     
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -190,7 +191,7 @@ class BlogPost(TimeStampedModel):
     """Blog posts"""
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    content = models.TextField()
+    content = CKEditor5Field('Text', config_name='default')
     excerpt = models.CharField(max_length=300, blank=True)
     featured_image = models.ImageField(upload_to='blog/featured/', blank=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blog_posts')
@@ -230,7 +231,7 @@ class Package(TimeStampedModel):
     
     name = models.CharField(max_length=100)
     package_type = models.CharField(max_length=20, choices=PACKAGE_TYPES)
-    description = models.TextField()
+    description = CKEditor5Field('Text', config_name='default')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     billing_period = models.CharField(max_length=20, default='monthly')  # monthly, yearly
     features = models.JSONField(default=list)  # List of features
@@ -319,7 +320,7 @@ class Job(TimeStampedModel):
     
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    description = models.TextField()
+    description = CKEditor5Field('Text', config_name='default')
     requirements = models.TextField()
     job_type = models.CharField(max_length=20, choices=JOB_TYPES)
     location = models.CharField(max_length=100)
@@ -395,7 +396,7 @@ class Invoice(TimeStampedModel):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField()
+    description = CKEditor5Field('Text', config_name='default')
     due_date = models.DateField()
     status = models.CharField(max_length=20, choices=INVOICE_STATUS, default='draft')
     paid_date = models.DateTimeField(blank=True, null=True)
