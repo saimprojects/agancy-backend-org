@@ -125,11 +125,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WhiteNoise is configured for static files. If you want to use Cloudinary for static files,
+# you should change STATICFILES_STORAGE to 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
+# and remove WhiteNoise from MIDDLEWARE.
+# For now, it's assumed you only want Cloudinary for media files (uploads).
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-
-
 
 
 MEDIA_URL = '/media/'
@@ -211,14 +214,16 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@saienterprise
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
-
-
+# Cloudinary settings
+# Ensure that these environment variables are set correctly in your .env file.
+# The most common reason for Cloudinary not working is incorrect credentials.
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUD_NAME'),
     'API_KEY': config('CLOUDINARY_API_KEY'),
     'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
 
+# This setting tells Django to use Cloudinary for all media file uploads (e.g., ImageField, FileField).
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 #Jazmin
@@ -229,7 +234,7 @@ JAZZMIN_SETTINGS = {
     "site_brand": "Saim Enterprises",
     "welcome_sign": "Welcome to Saim Enterprises Admin",
     "copyright": "Saim Enterprises © 2025",
-    "search_model": ["users.User", "core.Product"],
+    "search_model": ["users.User", "core.Service"],
 
     # Top menu links
     "topmenu_links": [
