@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django_ckeditor_5.fields import CKEditor5Field
+from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
 User = get_user_model()
 
@@ -64,6 +65,7 @@ class Project(TimeStampedModel):
     slug = models.SlugField(unique=True, blank=True)
     description = CKEditor5Field('Text', config_name='default')
     short_description = models.CharField(max_length=300)
+    tags = models.ManyToManyField('ProjectTag', blank=True, related_name='projects')
     industry = models.ForeignKey(Industry, on_delete=models.SET_NULL, null=True, blank=True)
     client = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='projects')
     client_name = models.CharField(max_length=200)
@@ -87,13 +89,15 @@ class Project(TimeStampedModel):
     
     # Status
     is_featured = models.BooleanField(default=False)
-    is_published = models.BooleanField(default=True)
+    is_published = models.BooleanField(default=False)
     
     # SEO fields
     meta_title = models.CharField(max_length=60, blank=True)
-    description = CKEditor5Field('Text', config_name='default')
+    meta_description = models.CharField(max_length=160, blank=True)
     
     def save(self, *args, **kwargs):
+        if self.client and not self.client_name:
+            self.client_name = self.client.get_full_name()
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
@@ -123,24 +127,12 @@ class ProjectTag(TimeStampedModel):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-    
-    def __str__(self):
-        return self.name
-
-class ProjectTagRelation(models.Model):
-    """Many-to-many relationship between projects and tags"""
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_tags')
-    tag = models.ForeignKey(ProjectTag, on_delete=models.CASCADE, related_name='tagged_projects')
-    
-    class Meta:
-        unique_together = ['project', 'tag']
 
 class Testimonial(TimeStampedModel):
     """Client testimonials"""
     name = models.CharField(max_length=100)
-    description = CKEditor5Field('Text', config_name='default')
     company = models.CharField(max_length=100, blank=True)
-    testimonial_text = models.TextField()
+    testimonial_text = CKEditor5Field('Text', config_name='default')
     rating = models.PositiveIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         default=5
@@ -354,7 +346,7 @@ class JobApplication(TimeStampedModel):
     name = models.CharField(max_length=100)
     email = models.EmailField()
     phone = models.CharField(max_length=20, blank=True)
-    resume = models.FileField(upload_to='resumes/')
+    resume = models.FileField(upload_to='resumes/', storage=RawMediaCloudinaryStorage())
     cover_letter = models.TextField(blank=True)
     portfolio_url = models.URLField(blank=True)
     status = models.CharField(max_length=20, choices=APPLICATION_STATUS, default='submitted')
@@ -391,16 +383,20 @@ class Invoice(TimeStampedModel):
     ]
     
     invoice_number = models.CharField(max_length=50, unique=True)
-    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    client = models.ForeignKey(User, on_delete=models.PROTECT, related_name='invoices')
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
     description = CKEditor5Field('Text', config_name='default')
     due_date = models.DateField()
     status = models.CharField(max_length=20, choices=INVOICE_STATUS, default='draft')
     paid_date = models.DateTimeField(blank=True, null=True)
     
+    def save(self, *args, **kwargs):
+        self.total_amount = self.amount + self.tax_amount
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Invoice {self.invoice_number} - {self.client.email}"
     
@@ -444,4 +440,3 @@ class SiteSettings(TimeStampedModel):
     
     def __str__(self):
         return "Site Settings"
-

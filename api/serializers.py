@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from core.models import (
-    Service, Industry, Project, ProjectImage, ProjectTag, ProjectTagRelation,
+    Service, Industry, Project, ProjectImage, ProjectTag,
     Testimonial, BlogCategory, BlogTag, BlogPost, Package, Lead, TeamMember,
     Job, JobApplication, FAQ, Invoice, SiteSettings
 )
@@ -41,17 +41,13 @@ class ProjectTagSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     industry_name = serializers.CharField(source='industry.name', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
+    tags = ProjectTagSerializer(many=True, read_only=True)
     images = ProjectImageSerializer(many=True, read_only=True)
-    tags = serializers.SerializerMethodField()
     
     class Meta:
         model = Project
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def get_tags(self, obj):
-        tag_relations = ProjectTagRelation.objects.filter(project=obj)
-        return [{'id': rel.tag.id, 'name': rel.tag.name, 'slug': rel.tag.slug} for rel in tag_relations]
 
 class TestimonialSerializer(serializers.ModelSerializer):
     project_title = serializers.CharField(source='project.title', read_only=True)
@@ -172,4 +168,3 @@ class SiteSettingsSerializer(serializers.ModelSerializer):
         model = SiteSettings
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
-

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    Service, Industry, Project, ProjectImage, ProjectTag, ProjectTagRelation,
+    Service, Industry, Project, ProjectImage, ProjectTag,
     Testimonial, BlogCategory, BlogTag, BlogPost, Package, Lead, TeamMember,
     Job, JobApplication, FAQ, Invoice, SiteSettings
 )
@@ -23,17 +23,14 @@ class ProjectImageInline(admin.TabularInline):
     model = ProjectImage
     extra = 1
 
-class ProjectTagInline(admin.TabularInline):
-    model = ProjectTagRelation
-    extra = 1
-
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ('title', 'client_name', 'industry', 'is_featured', 'is_published', 'created_at')
     list_filter = ('industry', 'is_featured', 'is_published', 'created_at')
     search_fields = ('title', 'client_name', 'description')
     prepopulated_fields = {'slug': ('title',)}
-    inlines = [ProjectImageInline, ProjectTagInline]
+    inlines = [ProjectImageInline]
+    filter_horizontal = ('tags',)
     ordering = ('-created_at',)
 
 @admin.register(ProjectTag)
@@ -131,4 +128,3 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Don't allow deletion of SiteSettings
         return False
-
