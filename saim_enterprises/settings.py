@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django_filters',
     'cloudinary',
     'cloudinary_storage',
+    'django_ckeditor_5',
     
     # Local apps
     'core',
@@ -65,7 +66,7 @@ ROOT_URLCONF = 'saim_enterprises.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
