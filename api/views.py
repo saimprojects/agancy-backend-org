@@ -3,9 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import SearchFilter, OrderingFilter, BaseFilterBackend
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, F
 from core.models import (
     Service, Industry, Project, ProjectTag, Testimonial, BlogCategory, 
     BlogTag, BlogPost, Package, Lead, TeamMember, Job, JobApplication, 
@@ -22,22 +22,18 @@ from .serializers import (
 
 User = get_user_model()
 
-class PublicPermission(permissions.BasePermission):
-    """Allow read access to everyone, write access to authenticated users only"""
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user and request.user.is_authenticated
-
 class AdminOnlyPermission(permissions.BasePermission):
     """Allow access only to admin users"""
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and request.user.role == 'admin'
 
+
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.filter(is_active=True)
     serializer_class = ServiceSerializer
-    permission_classes = [PublicPermission]
+    # Use IsAuthenticatedOrReadOnly for public read and restricted write.
+    # If only admins should edit, use [AdminOnlyPermission].
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['is_featured']
     search_fields = ['title', 'description']
@@ -49,12 +45,12 @@ class ServiceViewSet(viewsets.ModelViewSet):
 class IndustryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Industry.objects.all()
     serializer_class = IndustrySerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.AllowAny]
 
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.filter(is_published=True)
     serializer_class = ProjectSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['industry', 'is_featured']
     search_fields = ['title', 'description', 'client_name']
@@ -65,12 +61,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
 class ProjectTagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProjectTag.objects.all()
     serializer_class = ProjectTagSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.AllowAny]
 
 class TestimonialViewSet(viewsets.ModelViewSet):
     queryset = Testimonial.objects.filter(is_published=True)
     serializer_class = TestimonialSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['is_featured', 'rating']
     ordering_fields = ['created_at', 'rating']
@@ -79,17 +75,17 @@ class TestimonialViewSet(viewsets.ModelViewSet):
 class BlogCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BlogCategory.objects.all()
     serializer_class = BlogCategorySerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.AllowAny]
 
 class BlogTagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BlogTag.objects.all()
     serializer_class = BlogTagSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.AllowAny]
 
 class BlogPostViewSet(viewsets.ModelViewSet):
     queryset = BlogPost.objects.filter(is_published=True)
     serializer_class = BlogPostSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['category', 'tags', 'is_featured']
     search_fields = ['title', 'content', 'excerpt']
@@ -104,16 +100,18 @@ class BlogPostViewSet(viewsets.ModelViewSet):
     
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        # Increment view count
-        instance.views_count += 1
+        # Increment view count atomically to prevent race conditions
+        instance.views_count = F('views_count') + 1
         instance.save(update_fields=['views_count'])
+        # Refresh the instance from the DB to get the updated value for serialization
+        instance.refresh_from_db()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
 class PackageViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Package.objects.filter(is_active=True)
     serializer_class = PackageSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.AllowAny]
     ordering = ['order', 'price']
 
 class LeadViewSet(viewsets.ModelViewSet):
@@ -144,13 +142,13 @@ class ContactFormView(APIView):
 class TeamMemberViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TeamMember.objects.filter(is_active=True)
     serializer_class = TeamMemberSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.AllowAny]
     ordering = ['order', 'name']
 
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.filter(status='open')
     serializer_class = JobSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['job_type', 'location', 'status']
     search_fields = ['title', 'description']
@@ -191,7 +189,7 @@ class JobApplicationCreateView(APIView):
 class FAQViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = FAQ.objects.filter(is_active=True)
     serializer_class = FAQSerializer
-    permission_classes = [PublicPermission]
+    permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['category']
     ordering = ['order', 'question']
@@ -211,15 +209,10 @@ class SiteSettingsView(APIView):
     permission_classes = [permissions.AllowAny]
     
     def get(self, request):
-        try:
-            settings = SiteSettings.objects.first()
-            if not settings:
-                # Create default settings if none exist
-                settings = SiteSettings.objects.create()
-            serializer = SiteSettingsSerializer(settings)
-            return Response(serializer.data)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Use get_or_create for a cleaner and more atomic operation for this singleton model
+        settings, created = SiteSettings.objects.get_or_create(pk=1)
+        serializer = SiteSettingsSerializer(settings)
+        return Response(serializer.data)
 
 class DashboardStatsView(APIView):
     """Dashboard statistics for admin"""
@@ -245,4 +238,3 @@ class DashboardStatsView(APIView):
             'pending_applications': JobApplication.objects.filter(status='submitted').count(),
         }
         return Response(stats)
-

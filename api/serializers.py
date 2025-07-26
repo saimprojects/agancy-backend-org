@@ -83,10 +83,20 @@ class BlogPostListSerializer(serializers.ModelSerializer):
     """Simplified serializer for blog post lists"""
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    featured_image_thumbnail = serializers.SerializerMethodField()
     
     class Meta:
         model = BlogPost
-        fields = ['id', 'title', 'slug', 'excerpt', 'featured_image', 'author_name', 'category_name', 'published_at', 'views_count']
+        fields = [
+            'id', 'title', 'slug', 'excerpt', 'featured_image', 
+            'featured_image_thumbnail', 'author_name', 'category_name', 
+            'published_at', 'views_count'
+        ]
+
+    def get_featured_image_thumbnail(self, obj):
+        if obj.featured_image:
+            return obj.featured_image.build_url(width=400, height=250, crop='fill', gravity='auto')
+        return None
 
 class PackageSerializer(serializers.ModelSerializer):
     class Meta:
