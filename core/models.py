@@ -4,7 +4,8 @@ from django.utils.text import slugify
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django_ckeditor_5.fields import CKEditor5Field
 from cloudinary_storage.storage import RawMediaCloudinaryStorage
-from cloudinary.models import CloudinaryField  # ✅ import Cloudinary
+from cloudinary.models import CloudinaryField
+
 
 User = get_user_model()
 
@@ -23,8 +24,8 @@ class Service(TimeStampedModel):
     slug = models.SlugField(unique=True, blank=True)
     description = CKEditor5Field('Text', config_name='default')
     short_description = models.CharField(max_length=300)
-    icon = CloudinaryField('image', upload_to='services/icons/', blank=True, null=True)
-    image = CloudinaryField('image', upload_to='services/images/', blank=True, null=True)
+    icon = CloudinaryField('image', folder='services/icons/', blank=True, null=True)
+    image = CloudinaryField('image', folder='services/images/', blank=True, null=True)
     price_starting_from = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -86,7 +87,7 @@ class Project(TimeStampedModel):
     after_revenue = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, help_text="Monthly revenue after")
     
     # Media
-    featured_image = CloudinaryField('image', upload_to='projects/featured/', blank=True, null=True)
+    featured_image = CloudinaryField('image', folder='projects/featured/', blank=True, null=True)
     video_url = models.URLField(blank=True, null=True)
     
     # Status
@@ -113,7 +114,7 @@ class Project(TimeStampedModel):
 class ProjectImage(TimeStampedModel):
     """Additional images for projects"""
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='images')
-    image = CloudinaryField('image', upload_to='projects/gallery/')
+    image = CloudinaryField('image', folder='projects/gallery/')
     caption = models.CharField(max_length=200, blank=True)
     order = models.PositiveIntegerField(default=0)
     
@@ -139,8 +140,8 @@ class Testimonial(TimeStampedModel):
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         default=5
     )
-    photo = CloudinaryField('image', upload_to='testimonials/', blank=True, null=True)
-    company_logo = CloudinaryField('image', upload_to='testimonials/logos/', blank=True, null=True)
+    photo = CloudinaryField('image', folder='testimonials/', blank=True, null=True)
+    company_logo = CloudinaryField('image', folder='testimonials/logos/', blank=True, null=True)
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True)
     is_featured = models.BooleanField(default=False)
     is_published = models.BooleanField(default=True)
@@ -187,7 +188,7 @@ class BlogPost(TimeStampedModel):
     slug = models.SlugField(unique=True, blank=True)
     content = CKEditor5Field('Text', config_name='default')
     excerpt = models.CharField(max_length=300, blank=True)
-    featured_image = CloudinaryField('image', upload_to='blog/featured/', blank=True, null=True)
+    featured_image = CloudinaryField('image', folder='blog/featured/', blank=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blog_posts')
     category = models.ForeignKey(BlogCategory, on_delete=models.SET_NULL, null=True, blank=True)
     tags = models.ManyToManyField(BlogTag, blank=True)
@@ -283,7 +284,7 @@ class TeamMember(TimeStampedModel):
     name = models.CharField(max_length=100)
     role = models.CharField(max_length=100)
     bio = models.TextField()
-    photo = CloudinaryField('image', upload_to='team/', blank=True, null=True)
+    photo = CloudinaryField('image', folder='team/', blank=True, null=True)
     email = models.EmailField(blank=True)
     linkedin_url = models.URLField(blank=True)
     twitter_url = models.URLField(blank=True)
