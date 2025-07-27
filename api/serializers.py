@@ -12,7 +12,8 @@ User = get_user_model()
 # Helper function to build full Cloudinary URL
 def get_cloudinary_url(path):
     if path and not str(path).startswith('http'):
-        return f"https://res.cloudinary.com/{settings.CLOUDINARY_CLOUD_NAME}/{path}"
+        cloud_name = settings.CLOUDINARY_STORAGE.get('CLOUD_NAME', '')
+        return f"https://res.cloudinary.com/{cloud_name}/{path}"
     return path
 
 class UserSerializer(serializers.ModelSerializer):
