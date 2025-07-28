@@ -65,15 +65,12 @@ class ProjectImageSerializer(serializers.ModelSerializer):
         return get_cloudinary_url(obj.image)
 
 class ProjectTagSerializer(serializers.ModelSerializer):
-    icon = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectTag
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-    def get_icon(self, obj):
-        return get_cloudinary_url(obj.icon)
 
 class ProjectSerializer(serializers.ModelSerializer):
     industry_name = serializers.CharField(source='industry.name', read_only=True)
