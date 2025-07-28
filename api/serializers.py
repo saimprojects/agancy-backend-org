@@ -157,7 +157,6 @@ class BlogPostListSerializer(serializers.ModelSerializer):
         return None
 
 class PackageSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Package
